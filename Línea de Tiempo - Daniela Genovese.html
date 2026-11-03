@@ -1,0 +1,241 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Línea de Tiempo de Daniela</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: cabecera con datos de la sesión → eje 2021–2031 (cian = pasado, naranja = futuro) → panel de detalle por año o recorrido por dimensión */
+:root{
+  --bg:#f6f8f9; --surface:#ffffff; --ink:#15232b; --muted:#5b6b74; --line:#dce4e8;
+  --past:#0f9fbf; --future:#ec6420; --today:#15232b; --soft-past:#e3f4f8; --soft-future:#fdeee5;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f171b; --surface:#16222868; --ink:#e7eef1; --muted:#9aadb6; --line:#2a3a42;
+  --past:#3cc3e0; --future:#ff8a4c; --today:#e7eef1; --soft-past:#123a44; --soft-future:#43261a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f171b; --surface:#16222868; --ink:#e7eef1; --muted:#9aadb6; --line:#2a3a42;
+  --past:#3cc3e0; --future:#ff8a4c; --today:#e7eef1; --soft-past:#123a44; --soft-future:#43261a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px}
+.frame{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--past),var(--future))}
+header{display:grid;gap:14px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,5vw,48px);line-height:1.05;margin:0;text-wrap:balance}
+h1 span{background:linear-gradient(90deg,var(--past),var(--future));-webkit-background-clip:text;background-clip:text;color:transparent}
+.meta{display:flex;flex-wrap:wrap;gap:8px 28px;margin:0;color:var(--muted);font-size:15px}
+.meta div{display:flex;gap:6px}.meta dt{font-weight:700;color:var(--ink)}.meta dd{margin:0}
+.lead{max-width:65ch;margin:0;color:var(--muted)}
+
+/* Eje */
+.rail-scroll{overflow-x:auto;padding-bottom:6px}
+.rail{position:relative;min-width:880px;display:grid;grid-template-columns:repeat(11,1fr);padding-top:8px}
+.rail::before{content:"";position:absolute;left:4.5%;right:4.5%;top:37px;height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--past) 0 50%,var(--future) 50% 100%)}
+.node{position:relative;background:none;border:0;padding:0 2px;cursor:pointer;color:var(--ink);font:inherit;display:grid;justify-items:center;gap:6px;text-align:center}
+.node .yr{font-family:var(--display);font-weight:700;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dot{width:20px;height:20px;border-radius:50%;border:4px solid var(--past);background:var(--past);position:relative;z-index:1;transition:transform .2s}
+.node.future .dot{background:var(--bg);border-color:var(--future);border-style:dashed}
+.node.today .dot{width:30px;height:30px;margin-top:-5px;background:var(--today);border:5px solid var(--bg);box-shadow:0 0 0 3px var(--today)}
+.node .rel{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.node .tag{font-size:13.5px;line-height:1.25;max-width:13ch;font-weight:600}
+.node:hover .dot{transform:scale(1.18)}
+.node[aria-selected="true"] .tag{color:var(--past)}
+.node.future[aria-selected="true"] .tag{color:var(--future)}
+.node[aria-selected="true"] .dot{transform:scale(1.3)}
+.node:focus-visible{outline:2px solid var(--past);outline-offset:4px;border-radius:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+
+/* Vistas */
+.views{display:flex;gap:6px;flex-wrap:wrap}
+.views button,.chips button{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--line);background:transparent;color:var(--ink);padding:7px 14px;border-radius:999px;cursor:pointer}
+.views button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.views button:focus-visible,.chips button:focus-visible,.nav button:focus-visible{outline:2px solid var(--past);outline-offset:2px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:grid;gap:20px}
+.phead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.phead h2{font-family:var(--display);font-size:clamp(24px,3.4vw,34px);margin:0;line-height:1.1}
+.phead .when{font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--past)}
+.panel.future .phead .when{color:var(--future)}
+.nav{display:flex;gap:8px}
+.nav button{font:inherit;font-weight:600;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer}
+.nav button:disabled{opacity:.35;cursor:default}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.dim{border-top:3px solid var(--past);padding-top:12px;display:grid;gap:8px;align-content:start}
+.panel.future .dim{border-top-color:var(--future)}
+.dim h3{margin:0;display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.dim h3 svg{width:18px;height:18px;flex:none;stroke:currentColor}
+.dim p{margin:0;max-width:65ch}
+.dim ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--soft-past);color:var(--ink)}
+.panel.future .pill{background:var(--soft-future)}
+
+/* Vista por dimensión */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button[aria-pressed="true"]{background:var(--soft-past);border-color:var(--past)}
+.track{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.track li{display:grid;grid-template-columns:118px minmax(0,1fr);gap:18px;padding:14px 0;border-top:1px solid var(--line);cursor:pointer}
+.track li:first-child{border-top:0}
+.track .y{display:grid;gap:2px}
+.track .y b{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums;color:var(--past)}
+.track li.future .y b{color:var(--future)}
+.track li.today .y b{color:var(--ink)}
+.track .y small{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.track .txt{display:grid;gap:6px}
+.track .txt p{margin:0;max-width:70ch}
+.track li:hover .txt{color:var(--ink)}
+.track .divider{grid-column:1/-1;padding:6px 0;cursor:default;border-top:1px dashed var(--line);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+footer{font-size:13px;color:var(--muted)}
+@media (max-width:640px){.grid{grid-template-columns:minmax(0,1fr)}.panel{padding:18px}.track li{grid-template-columns:minmax(0,1fr);gap:6px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="frame" aria-hidden="true"></div>
+  <header>
+    <div class="eyebrow">Plantilla línea de tiempo · Sesión de Mentoring</div>
+    <h1>Daniela Genovese: <span>2021 → 2031</span></h1>
+    <dl class="meta">
+      <div><dt>Mentee:</dt><dd>Daniela Belén Genovese Martín</dd></div>
+      <div><dt>Carrera:</dt><dd>Ingeniería Industrial</dd></div>
+      <div><dt>Mentor:</dt><dd>Valentín Cuipa Saldaña</dd></div>
+      <div><dt>Fecha:</dt><dd>02/11/2026</dd></div>
+    </dl>
+    <p class="lead">Cinco años de hitos vividos y cinco de proyección. Toca un año en el eje o usa las flechas del teclado para recorrerlo.</p>
+  </header>
+
+  <section aria-label="Eje temporal">
+    <div class="rail-scroll"><div class="rail" id="rail" role="tablist" aria-label="Años"></div></div>
+    <div class="legend"><span><i style="background:var(--past)"></i>Recorrido vivido</span><span><i style="background:var(--today)"></i>Hoy</span><span><i style="border:2px dashed var(--future)"></i>Proyección</span></div>
+  </section>
+
+  <div class="views" role="group" aria-label="Vista">
+    <button id="v-year" aria-pressed="true">Por año</button>
+    <button id="v-dim" aria-pressed="false">Por dimensión</button>
+  </div>
+
+  <section class="panel" id="panel" aria-live="polite"></section>
+
+  <footer>Sesión de Mentoring 360° · Contenido tomado de la plantilla completada por la mentee.</footer>
+</div>
+
+<script>
+const D=[
+ {y:2021,rel:"Hace 5 años",tag:"Pandemia y primer paso al francés",
+  p:["Estábamos en Pandemia del Covid, me encontraba en el 4to año de mi carrera. Tenía ganas de realizar un intercambio en el extranjero. Me decidí por comenzar a estudiar francés a distancia, ya que en mi Universidad había muchos intercambios a Francia."],
+  f:["Estudiante de Ingeniería Industrial (UNCuyo)."],
+  l:["La resiliencia y confiar en uno mismo fue lo que más aprendí durante el comienzo y desarrollo de mi carrera.","En cuanto a habilidades más técnicas, desarrollé un Curso MS Power Platform (Power Automate, Power Apps, Power BI)."],
+  m:["Me veía interactuando con personas de todo el mundo, de distintas culturas pero unidos por un mismo propósito. Por esto siempre me interesó estudiar idiomas."]},
+ {y:2022,rel:"Hace 4 años",tag:"Congreso CAEII",
+  p:["Me encontraba en 5° año de la carrera. Estábamos saliendo de la pandemia del Covid. Seguía estudiando Francés y viendo oportunidades de intercambio."],
+  f:["Estudiante de Ingeniería Industrial.","Comité Organizador del Congreso Argentino de Ingeniería Industrial (CAEII) en Mendoza, Argentina."],
+  l:["Gestión de sponsors corporativos para un evento de más de 1.000 asistentes.","Desarrollo de habilidades blandas como el liderazgo a la hora de desarrollar trabajo en equipo, empatía y escucha de opiniones.","Pensamiento creativo y curiosidad."],
+  m:["En búsqueda de mi vocación profesional dentro de la ingeniería. El desarrollo del CAEII, me ayudó a enfocar mi carrera hacia el desarrollo de proyectos conjuntos."]},
+ {y:2023,rel:"Hace 3 años",tag:"Fulbright y Holcim",
+  p:["Obtuve Beca Friends of Fulbright para viajar a Alabama por 1 mes y medio, con el objetivo de conocer las Universidades estadounidenses, sus programas y sus formas de enseñar, además de generar el intercambio cultural que tanto me apasiona."],
+  f:["En el último año de Ingeniería Industrial.","Ingreso como pasante CapEx en Holcim Argentina."],
+  l:["Cursos de posgrado en Logística, Supply Chain y Gestión de la Producción (University of Alabama).","Gestión de más de 8 proyectos de inversión (más de USD 2M) en Holcim. Uso de SAP y generación de dashboards en Looker Studio."],
+  m:["Conocer sobre el mundo de los grandes proyectos de inversión, los stakeholders, los desafíos que se presentan, siendo el comienzo de mi desarrollo profesional formal."]},
+ {y:2024,rel:"Hace 2 años",tag:"Graduada e ingreso a WSP",
+  p:["Comienzo de mi carrera profesional como graduada. Ingreso a consultora de ingeniería con el fin de conocer más de cerca las herramientas y las metodologías con las que se desarrollan los proyectos de gran envergadura y con muchos stakeholders involucrados."],
+  f:["Ingeniera Industrial graduada.","Ingreso a WSP Argentina como Project Controls Engineer."],
+  l:["Desarrollo del área de Control de Proyectos en Argentina junto con mi líder.","Proactividad.","Aprendí a consultar abiertamente a profesionales con más experiencia, a construir vínculos laborales y a ampliar mi vocabulario técnico.","Certificado en Mercado de Capitales (UNCuyo)."],
+  m:["Ampliar mi rol hacia la gestión integral de proyectos, abarcando todo el ciclo de vida: propuesta, planificación, ejecución y cierre, es decir consolidarme como PM."]},
+ {y:2025,rel:"Hace 1 año",tag:"Máster y Changemaker",
+  p:["Sentía que, para seguir creciendo, la proactividad ya no era suficiente: necesitaba una formación sólida y una guía concreta en gestión de proyectos."],
+  f:["Project Controls Engineer en WSP.","Inicio de la Maestría en Project Management (CEUPE, Madrid)."],
+  l:["Premio Argentina Changemaker 2025 (WSP Excellence Awards).","Desarrollo de cronogramas de más de 5 proyectos mineros con Primavera P6 y MS Project.","EVM (CPI, SPI); 85% de cumplimiento de hitos críticos, reportes Power BI para más de 20 stakeholders, relacionamiento con más de 25 profesionales.","Impulsé la vinculación del área de Control de Proyectos de Argentina con la de Chile, un equipo más consolidado y con mayor número de profesionales, con el fin de incorporar metodologías y buenas prácticas."],
+  m:["Me proyectaba liderando el área de Control de Proyectos o como Project Manager. Sin embargo, tenía como objetivo trabajar un tiempo en el extranjero para desarrollar más mis “power skills”."]},
+ {y:2026,rel:"Presente",tag:"Máster finalizado",today:true,
+  p:["Comprendí que aún no me siento preparada, en lo profesional ni en lo personal, para liderar un área, dado el aumento de carga y presión que implica.","Viajé a Madrid a recibir mi título de Maestría y reafirmé mi deseo por desarrollar proyectos internacionales con profesionales localizados en distintas partes del mundo."],
+  f:["Project Controls Engineer en WSP, Maestría en Project Management finalizada."],
+  l:["Desarrollé la capacidad de trabajar bajo presión en proyectos de alta exigencia, con foco en el cumplimiento de hitos y plazos críticos.","Reportabilidad de Portafolio y gobernanza. Conocimiento de la PMO y de indicadores financieros claves para la salud del portafolio."],
+  m:["Mi objetivo sigue siendo ampliar mis conocimientos e influencia, incluyendo lo técnico, para generar valor en proyectos internacionales con impacto social positivo."]},
+ {y:2027,rel:"En 1 año",tag:"Definir la orientación",future:true,
+  p:["Darme el tiempo para reflexionar sobre qué tipo de proyectos me motivan más: minería y proyectos industriales, o proyectos bajo metodologías ágiles.","Quiero perfeccionar el inglés y el francés, como preparación para una experiencia internacional."],
+  f:["Me veo trabajando como Project Manager y adquiriendo conocimientos en proyectos desafiantes."],
+  l:["Habilidades técnicas para desarrollar proyectos mineros, industriales u otros, de forma sustentable y cumpliendo con todos los requisitos legales."],
+  m:["Definir la orientación de mi carrera y gestionar proyectos de punta a punta, desde la propuesta hasta el cierre.","Profundizar el conocimiento técnico de los proyectos de minería y remediación ambiental para ampliar mi ámbito de influencia más allá del control de proyectos."]},
+ {y:2028,rel:"En 2 años",tag:"Vida en el exterior",future:true,
+  p:["Me veo viviendo en el extranjero, desarrollando aún más habilidades blandas como la resiliencia, el autoconocimiento y el crecimiento personal al salir de mi zona de confort."],
+  f:["Me veo trabajando como Project Manager y dando los primeros pasos hacia una consultora propia o junto a profesionales afines, para realizar proyectos específicos con profesionales internacionales."],
+  l:["Dominar los fundamentos técnicos de los proyectos en los que trabajo, para dialogar con ingeniería al mismo nivel.","Si opté por lo ágil, contar con formación y una primera experiencia práctica en Scrum o enfoques híbridos."],
+  m:["Evaluar la certificación PMP o alguna otra certificación del PMI más afín a la situación profesional en la que me encuentre, por ejemplo, la certificación PMO-CP."]},
+ {y:2029,rel:"En 3 años",tag:"Certificación PMI",future:true,
+  p:["Haber vivido o estar viviendo una experiencia internacional, ya sea un traslado temporal o un período de trabajo en otro país, aprovechando mi ciudadanía italiana o con una visa de trabajo."],
+  f:["Project Manager certificada (PMP o PMO-CP), participando en proyectos internacionales con equipos multiculturales.","En paralelo, desarrollando proyectos específicos junto a una red de profesionales afines."],
+  l:["Haber participado en al menos un proyecto internacional con un equipo multicultural, usando el inglés o el francés como idioma de trabajo.","Obtener la certificación del PMI elegida (PMP o PMO-CP).","Fortalecer mi capacidad de liderazgo e influencia."],
+  m:["Liderar proyectos de mayor envergadura y complejidad, contando con la dirección de profesionales senior que puedan guiarme y mentorearme en este camino."]},
+ {y:2030,rel:"En 4 años",tag:"PM Senior",future:true,
+  p:["Sentirme estable y segura en mi entorno personal, con una red de apoyo sólida que acompañe mayores responsabilidades."],
+  f:["Project Manager Senior, a cargo de proyectos de mayor envergadura y de la dirección directa de equipos.","Consolidando la consultora propia o con profesionales afines para proyectos específicos."],
+  l:["Haber dirigido equipos de forma directa, con responsabilidad sobre alcance, plazo, costo y cliente.","Haber desarrollado competencias en negociación, gestión de conflictos y toma de decisiones bajo presión."],
+  m:["Orientar mi carrera hacia proyectos internacionales de desarrollo sostenible, aprovechando mis tres idiomas y mi ciudadanía italiana."]},
+ {y:2031,rel:"En 5 años",tag:"Impacto sostenible",future:true,
+  p:["Lograr un mejor equilibrio entre vida personal y laboral, con hábitos que me ayuden a gestionar la presión."],
+  f:["Project Manager Senior en proyectos internacionales de desarrollo sostenible, con una consultora propia o junto a profesionales afines para proyectos específicos, evaluando el paso al liderazgo de un área."],
+  l:["Contar con una trayectoria comprobable en proyectos internacionales con impacto sostenible.","Tener la experiencia y la claridad personal para decidir si asumir el liderazgo de un área."],
+  m:["Consolidarme como Project Manager en proyectos internacionales de desarrollo sostenible, generando valor e impacto positivo en la sociedad.","Si decido asumir el liderazgo de un área, hacerlo con un estilo de liderazgo participativo."]}
+];
+const DIMS=[
+ {k:"p",name:"Situación personal",icon:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>'},
+ {k:"f",name:"Situación profesional",icon:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 12h18"/></svg>'},
+ {k:"l",name:"Logros / Aprendizajes",icon:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>'},
+ {k:"m",name:"Metas / Proyecciones",icon:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>'}
+];
+let cur=5, view="year", dim="f";
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const rail=document.getElementById("rail"), panel=document.getElementById("panel");
+D.forEach((d,i)=>{
+  const b=document.createElement("button");
+  b.className="node"+(d.today?" today":"")+(d.future?" future":"");
+  b.setAttribute("role","tab"); b.id="n"+i;
+  b.innerHTML=`<span class="yr">${d.y}</span><span class="dot"></span><span class="rel">${d.rel}</span><span class="tag">${esc(d.tag)}</span>`;
+  b.onclick=()=>{cur=i; if(view==="dim"){setView("year")} else render()};
+  rail.appendChild(b);
+});
+function list(arr){return arr.length>1?`<ul>${arr.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:`<p>${esc(arr[0])}</p>`}
+function renderYear(){
+  const d=D[cur];
+  panel.className="panel"+(d.future?" future":"");
+  panel.innerHTML=`<div class="phead"><div><div class="when">${d.rel} · ${d.y}</div><h2>${esc(d.tag)}</h2></div>
+   <div class="nav"><button id="prev" ${cur===0?"disabled":""} aria-label="Año anterior">← ${cur>0?D[cur-1].y:""}</button><button id="next" ${cur===D.length-1?"disabled":""} aria-label="Año siguiente">${cur<D.length-1?D[cur+1].y:""} →</button></div></div>
+   <div class="grid">${DIMS.map(x=>`<div class="dim"><h3>${x.icon}${x.name}</h3>${list(d[x.k])}</div>`).join("")}</div>
+   ${d.today?'<div><span class="pill">Punto de inflexión: de lo vivido a lo proyectado</span></div>':""}`;
+  document.getElementById("prev").onclick=()=>{cur--;render()};
+  document.getElementById("next").onclick=()=>{cur++;render()};
+}
+function renderDim(){
+  const x=DIMS.find(z=>z.k===dim);
+  panel.className="panel";
+  let rows="";
+  D.forEach((d,i)=>{
+    if(i===6) rows+=`<li class="divider" aria-hidden="true">Proyección</li>`;
+    rows+=`<li class="${d.future?"future":""}${d.today?" today":""}" data-i="${i}"><div class="y"><b>${d.y}</b><small>${d.rel}</small></div><div class="txt">${d[dim].map(t=>`<p>${esc(t)}</p>`).join("")}</div></li>`;
+  });
+  panel.innerHTML=`<div class="phead"><div><div class="when">Recorrido 2021 → 2031</div><h2>${x.name}</h2></div></div>
+   <div class="chips" role="group" aria-label="Dimensión">${DIMS.map(z=>`<button data-k="${z.k}" aria-pressed="${z.k===dim}">${z.name}</button>`).join("")}</div>
+   <ol class="track">${rows}</ol>`;
+  panel.querySelectorAll(".chips button").forEach(b=>b.onclick=()=>{dim=b.dataset.k;render()});
+  panel.querySelectorAll(".track li[data-i]").forEach(li=>li.onclick=()=>{cur=+li.dataset.i;setView("year")});
+}
+function render(){
+  rail.querySelectorAll(".node").forEach((n,i)=>n.setAttribute("aria-selected",view==="year"&&i===cur));
+  view==="year"?renderYear():renderDim();
+}
+function setView(v){view=v;document.getElementById("v-year").setAttribute("aria-pressed",v==="year");document.getElementById("v-dim").setAttribute("aria-pressed",v==="dim");render()}
+document.getElementById("v-year").onclick=()=>setView("year");
+document.getElementById("v-dim").onclick=()=>setView("dim");
+document.addEventListener("keydown",e=>{
+  if(view!=="year")return;
+  if(e.key==="ArrowRight"&&cur<D.length-1){cur++;render();document.getElementById("n"+cur).focus()}
+  if(e.key==="ArrowLeft"&&cur>0){cur--;render();document.getElementById("n"+cur).focus()}
+});
+render();
+setTimeout(()=>{const n=document.getElementById("n"+cur),s=document.querySelector(".rail-scroll");if(s.scrollWidth>s.clientWidth)s.scrollLeft=n.offsetLeft-s.clientWidth/2+n.offsetWidth/2},50);
+</script>
+
+</body></html>
